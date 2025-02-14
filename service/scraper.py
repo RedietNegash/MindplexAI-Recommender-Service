@@ -75,4 +75,24 @@ class TwitterFetcher:
         df = pd.DataFrame(data)
         print(df)
         return df
+    #EmailFetcher class
+class EmailFetcher:
+    def __init__(self):
+        load_dotenv()
+        self.service = self.gmail_authenticate()
+        self.api_key = os.getenv("GOOGLE_API_KEY")
+        self.email_query = os.getenv("EMAIL_QUERY")
+        self.prompt = (
+            "You are given the plain text content of more than one newsletter email. Your task is to extract and return only "
+            "the title and the first paragraph of the main news content, ensuring that all ads and sponsored content are removed. "
+            "Since the email contains more than one newsletter, you must extract all of them. Follow these steps:\n"
+            "    1. Identify the title of the main news content.\n"
+            "    2. Extract the first paragraph of the main news content.\n"
+            "    3. Remove any ads, sponsored content, or unrelated promotional material.\n"
+            "    4. Return a list of all news items, with the output format for each news being:\n"
+            '        "Content: {content}\n'
+            '        "----------------------"\n'
+            "    Return the output as plain text."
+        )
+        self.model = genai.GenerativeModel(model_name="gemini-1.5-flash")
         
