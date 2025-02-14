@@ -125,4 +125,30 @@ class EmailFetcher:
             if 'messages' in result:
                 messages.extend(result['messages'])
         return messages
+    
+    def get_content(self, text):
+        genai.configure(api_key=self.api_key)
+        response = self.model.generate_content([self.prompt, text])
+        content = response.text
+        return content
+
+    def parse_parts(self, parts):
+        if not parts:
+            return ''
+        
+        text = ''
+        for part in parts:
+            mimeType = part.get("mimeType")
+            body = part.get("body")
+            data = body.get("data")
+            if part.get("parts"):
+                text += self.parse_parts(part.get("parts"))
+            if mimeType == "text/plain":
+                if data:
+                    text += urlsafe_b64decode(data).decode()
+            elif mimeType == "text/html":
+                if data:
+                    text += urlsafe_b64decode(data).decode()
+                    text = BeautifulSoup(text, "html.parser").get_text()
+        return text
         
