@@ -151,4 +151,39 @@ class EmailFetcher:
                     text += urlsafe_b64decode(data).decode()
                     text = BeautifulSoup(text, "html.parser").get_text()
         return text
+    
+    def read_message(self, message):
+        msg = self.service.users().messages().get(userId='me', id=message['id'], format='full').execute()
+        payload = msg['payload']
+        headers = payload.get("headers")
+        parts = payload.get("parts")
+        email_data = {
+            'from': '',
+            'title': '',
+            'content': ''
+        }
+        if headers:
+            for header in headers:
+                name = header.get("name")
+                value = header.get("value")
+                if name.lower() == 'from':
+                    email_data['from'] = value
+                elif name.lower() == 'subject':
+                    email_data['title'] = value
+        text = self.parse_parts(parts)
+        email_data['content'] = self.get_content(text)
+        return email_data
+
+    def fetch_emails(self):
+        results = self.search_messages(self.email_query)
+        print(f"Found {len(results)} results.")
+        emails = []
+        for index, msg in enumerate(results):
+            email_data = self.read_message(msg)
+            email_data['index'] = index
+            emails.append(email_data)
+        df = pd.DataFrame(emails, columns=['index', 'from', 'title', 'content'])
+        print(df)
+        return df
+
         
