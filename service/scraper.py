@@ -113,4 +113,16 @@ class EmailFetcher:
             with open("token.pickle", "wb") as token:
                 pickle.dump(creds, token)
         return build('gmail', 'v1', credentials=creds)
+    
+    def search_messages(self, query):
+        result = self.service.users().messages().list(userId='me', q=query).execute()
+        messages = []
+        if 'messages' in result:
+            messages.extend(result['messages'])
+        while 'nextPageToken' in result:
+            page_token = result['nextPageToken']
+            result = self.service.users().messages().list(userId='me', q=query, pageToken=page_token).execute()
+            if 'messages' in result:
+                messages.extend(result['messages'])
+        return messages
         
