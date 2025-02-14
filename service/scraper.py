@@ -185,5 +185,40 @@ class EmailFetcher:
         df = pd.DataFrame(emails, columns=['index', 'from', 'title', 'content'])
         print(df)
         return df
+#TextProcessor class
+class TextProcessor:
+    def __init__(self, email_df, tweet_df, model_name='all-MiniLM-L6-v2'):
+        self.email_df = email_df
+        self.tweet_df = tweet_df
+        self.model_name = model_name
+        self.model = SentenceTransformer(model_name)
+        self.df = None
+
+    def process_text(self, text):
+        text = unicodedata.normalize('NFKD', text).encode('ascii', 'ignore').decode('utf-8', 'ignore')
+        text = re.sub(r'[^a-zA-Z\s]', '', text)
+        text = text.translate(str.maketrans('', '', string.punctuation))
+        text = text.lower()
+        stop_words = set(stopwords.words('english'))
+        text = " ".join([word for word in text.split() if word not in stop_words])
+        return text
+
+    def prepare_data(self):
+        self.email_df['total_content'] = self.email_df['from'] + self.email_df['title'] + self.email_df['content']
+        self.tweet_df['total_content'] = self.tweet_df['text'] + self.tweet_df['retweets'] + self.tweet_df['quoted-tweets']
+
+        self.df = pd.concat([self.email_df[['total_content']], self.tweet_df[['total_content']]], axis=0).reset_index(drop=True)
+
+    def add_processed_content(self):
+        self.df['processed_content'] = self.df['total_content'].apply(self.process_text)
+
+    def generate_embeddings(self):
+        self.df['processed_content'] = self.df['processed_content'].fillna('')
+        processed_content = self.df['processed_content'].tolist()
+        all_embeddings = self.model.encode(processed_content)
+        self.df['embedding'] = list(all_embeddings)
+
+    def get_dataframe(self):
+        return self.df
 
         
