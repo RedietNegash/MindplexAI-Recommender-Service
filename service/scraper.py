@@ -75,7 +75,11 @@ class TwitterFetcher:
         df = pd.DataFrame(data)
         print(df)
         return df
-    #EmailFetcher class
+
+
+
+
+#EmailFetcher class
 class EmailFetcher:
     def __init__(self):
         load_dotenv()
@@ -185,6 +189,8 @@ class EmailFetcher:
         df = pd.DataFrame(emails, columns=['index', 'from', 'title', 'content'])
         print(df)
         return df
+
+
 #TextProcessor class
 class TextProcessor:
     def __init__(self, email_df, tweet_df, model_name='all-MiniLM-L6-v2'):
@@ -220,5 +226,38 @@ class TextProcessor:
 
     def get_dataframe(self):
         return self.df
+    
+    
+def scraper():
+    
+    twitter_fetcher = TwitterFetcher()
+    tweet_df = twitter_fetcher.fetch_24_hour_tweets()
+    
+    email_fetcher = EmailFetcher()
+    email_df = email_fetcher.fetch_emails()
+    
+    
+    processor = TextProcessor(email_df=email_df, tweet_df=tweet_df)
+    processor.prepare_data()
+    processor.add_processed_content()
+    processor.generate_embeddings()
+    processed_df = processor.get_dataframe()
+    processed_df['id'] = processed_df.index
+
+
+ 
+    payloads = processed_df['processed_content']
+    
+    qdrant = Qdrant()
+
+    collection_name = 'trend'
+    vector_size = 384
+    data= processed_df
+    qdrant.items_embedding_batch_insert_data(vector_size,collection_name, data, batch_size=500)
+    
+  
+ 
+ 
+    
 
         
